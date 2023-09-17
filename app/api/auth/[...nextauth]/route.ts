@@ -1,12 +1,20 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import type { Adapter } from "next-auth/adapters";
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import prisma from "@/lib/prisma";
+
+import { FirestoreAdapter } from "@auth/firebase-adapter";
 
 import GitHub from 'next-auth/providers/github'
+import { cert } from "firebase-admin/app";
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as Adapter,
+  adapter: FirestoreAdapter({
+    namingStrategy: "snake_case",
+    credential: cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY,
+    })
+  }) as Adapter,
   providers: [
     GitHub({
       clientId: process.env.GITHUB_ID as string,
