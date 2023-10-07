@@ -3,24 +3,14 @@
 import React, { memo, useState } from 'react';
 import { Handle, NodeProps, Position, useStore, useUpdateNodeInternals } from 'reactflow';
 
+const INITIAL_STATE = 'initial';
+
 function CustomNode(props: NodeProps) {
   const [edgeCount, incrEdge] = useState(0);
 
-  const { data } = props;
+  const { data, id } = props;
 
-  // console.log('CustomNode', props);
-
-  const { handles = [] } = data;
-
-  // unique handles by id
-  const uniqueHandles = handles.reduce((acc: any, current: any) => {
-    const x = acc.find((item: any) => item.id === current.id);
-    if (!x) return acc.concat([current]);
-
-    return acc;
-  }, []);
-
-  // console.log('uniqueHandles', uniqueHandles);
+  console.log('CustomNode', props);
 
 
   const updateNodeInternals = useUpdateNodeInternals();
@@ -38,13 +28,15 @@ function CustomNode(props: NodeProps) {
 
   const nid = `in-${edges.length + 1}`;
 
+  const isInitial = id === INITIAL_STATE;
+
   return (
     <div className="px-4 py-2 shadow-md rounded-md bg-white border-2 border-[#B2B2B2]">
       <div className="flex">
         <div className="text-xs font-bold">{data.label}</div>
       </div>
 
-      {edges.map((edge, i) => (
+      {!isInitial && edges.map((edge, i) => (
         <Handle
           id={edge.targetHandle!}
           key={edge.id + edge.targetHandle}
@@ -56,7 +48,7 @@ function CustomNode(props: NodeProps) {
         />
       ))}
 
-      <Handle
+      {!isInitial && <Handle
         id={nid}
         key={nid}
         type="target"
@@ -65,7 +57,7 @@ function CustomNode(props: NodeProps) {
         className='!w-3 !h-3 !rounded'
         onConnect={(params) => console.log("handle onConnect", params)}
         isConnectable
-      />
+      />}
 
       {/* {uniqueHandles.map((handle: any) => (
         <Handle
@@ -88,3 +80,4 @@ function CustomNode(props: NodeProps) {
 }
 
 export default memo(CustomNode);
+

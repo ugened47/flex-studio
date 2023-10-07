@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useLayoutEffect, useMemo, useState } from "react";
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import ReactFlow, {
   Connection,
@@ -24,6 +24,8 @@ import ReactFlow, {
   Position,
 } from "reactflow";
 
+import Case from "case";
+
 import cx from "classnames";
 
 import "reactflow/dist/style.css";
@@ -34,6 +36,7 @@ import { getRandomColor } from "./utils";
 import { AutomaticArrow, AutomaticArrowHead, AutomaticArrowTail, CustomerArrow, OperatorArrow, PrivilegedStateIcon, ProviderArrow } from "@/components/shared/icons/transition-arrow";
 
 import ELK from 'elkjs/lib/elk.bundled.js';
+import { inter } from "@/app/fonts";
 
 const nodeTypes = {
   custom: customNode,
@@ -56,6 +59,9 @@ const initialEdges: Edge<any>[] = [];
 const flowKey = "flow";
 
 const getNodeId = () => `node_${+new Date()}`;
+
+let id = 0;
+const getId = () => `dndnode_${id++}`;
 
 enum SelectedEdgeType {
   Customer = "customer",
@@ -86,7 +92,7 @@ const elkOptions = {
   'elk.spacing.nodeNode': '80',
 };
 
-const getLayoutedElements = (nodes: Node[], edges: Edge[], options: any = {}) => {
+const getLayoutedElements = async (nodes: Node[], edges: Edge[], options: any = {}) => {
   const isHorizontal = options?.['elk.direction'] === 'RIGHT';
   const graph = {
     id: 'root',
@@ -105,19 +111,22 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], options: any = {}) =>
     edges: edges,
   };
 
-  return elk
-    .layout(graph as any)
-    .then((layoutedGraph) => ({
-      nodes: layoutedGraph?.children?.map((node) => ({
-        ...node,
+  try {
+    const layoutedGraph = await elk
+      .layout(graph as any);
+    return ({
+      nodes: layoutedGraph?.children?.map((node_1) => ({
+        ...node_1,
         // React Flow expects a position property on the node instead of `x`
         // and `y` fields.
-        position: { x: node.x, y: node.y },
+        position: { x: node_1.x, y: node_1.y },
       })),
 
       edges: layoutedGraph.edges,
-    }))
-    .catch(console.error);
+    });
+  } catch (message) {
+    return console.error(message);
+  }
 };
 
 function GraphEditorComponent() {
@@ -128,9 +137,11 @@ function GraphEditorComponent() {
   );
   const { setViewport, fitView } = useReactFlow();
 
+  const [newStateName, setNewStateName] = useState<string>("");
+
   const [selectedEdgeType, setSelectedEdgeType] = useState<SelectedEdgeType>(SelectedEdgeType.Customer);
 
-  // const updateNodeInternals = useUpdateNodeInternals();
+  const reactFlowWrapper = useRef<any>(null);
 
   const onLayout = useCallback(
     ({ direction, useInitialNodes = false }: any) => {
@@ -149,44 +160,19 @@ function GraphEditorComponent() {
     [nodes, edges]
   );
 
-    // Calculate the initial layout on mount.
-    useLayoutEffect(() => {
-      onLayout({ direction: 'DOWN', useInitialNodes: true });
+  // Calculate the initial layout on mount.
+  useLayoutEffect(() => {
+    onLayout({ direction: 'DOWN', useInitialNodes: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+  }, []);
 
   const onConnect = useCallback(
     (params: Connection) => {
       setEdges((eds) => {
-        // updateNodeInternals()
         console.log('params', params);
 
         const edgeName = `${selectedEdgeType}/${params.source}-to-${params.target}`
 
-        // setNodes((nds) =>
-        //   nds.map((node) => {
-        //     if (node.id === params.target) {
-
-        //       node.data = {
-        //         ...node.data,
-        //         handles: [
-        //           ...node.data.handles?.filter((el: any) => el.id !== `${selectedEdgeType}_${params.source}_${params.target}`) || [],
-        //           {
-        //             id: `${selectedEdgeType}_${params.source}_${params.target}`,
-        //             position: Position.Top,
-        //             type: 'target',
-        //             className: `!w-3 !h-3 !bg-[${EdgeColor[selectedEdgeType]}] !rounded !left-${nds.length * 3 + 1}`,
-        //           },
-        //         ],
-        //       };
-        //     }
-  
-        //     return node;
-        //   })
-        // );
-
-        // updateNodeInternals(params.target!);
-      
         return addEdge(
           {
             ...params,
@@ -204,12 +190,12 @@ function GraphEditorComponent() {
             },
           },
           eds,
-        )},
+        )
+      },
       )
     },
     [setEdges, setNodes, selectedEdgeType],
   );
-
 
   const onSave = useCallback(() => {
     if (rfInstance) {
@@ -233,30 +219,53 @@ function GraphEditorComponent() {
     restoreFlow();
   }, [setEdges, setNodes, setViewport]);
 
-  const onAdd = useCallback(() => {
-    const center = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+  const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }, []);
 
-    const newNode = {
-      id: getNodeId(),
-      data: { label: "Added node" },
-      type: "custom",
-      position: {
-        x: Math.random() * center.x - 100,
-        y: Math.random() * center.y,
-      },
-    };
-    setNodes((nds) => nds.concat(newNode));
-  }, [setNodes]);
+  const onDrop = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+
+      const reactFlowBounds = reactFlowWrapper?.current?.getBoundingClientRect?.();
+      const stateName = event.dataTransfer.getData('application/reactflow');
+
+      // check if the dropped element is valid
+      if (typeof stateName === 'undefined' || !stateName) {
+        return;
+      }
+
+      const position = rfInstance?.project?.({
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
+      });
+
+      const formattedStateName = Case.kebab(stateName);
+
+      const newNode = {
+        id: formattedStateName,
+        data: { label: formattedStateName },
+        type: "custom",
+        position,
+      };
+
+      setNodes((nds) => nds.concat(newNode));
+
+      setNewStateName("");
+    },
+    [rfInstance, setNodes]
+  );
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full" ref={reactFlowWrapper}>
       <ReactFlow
         className="bg-teal-50"
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        
+
         onConnect={onConnect}
         onInit={setRfInstance}
         fitView
@@ -266,34 +275,28 @@ function GraphEditorComponent() {
         edgeTypes={edgeTypes}
         // connectionLineComponent={FloatingConnectionLine}
         proOptions={proOptions}
+        onDrop={onDrop}
+        onDragOver={onDragOver}
       >
         <Panel position="top-right">
-        <button onClick={() => onLayout({ direction: 'DOWN' })}>vertical layout</button>
+          <div className="max-w-xs">
+            <GraphgActions
+              onLayout={onLayout}
+              onSave={onSave}
+              onRestore={onRestore}
+            />
 
-          <button
-            onClick={onAdd}
-            className="mb-2 mr-2 rounded-lg bg-gradient-to-br from-purple-600 to-blue-500 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-gradient-to-bl focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800"
-          >
-            add node
-          </button>
-          <button
-            onClick={onSave}
-            className="mb-2 mr-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-gradient-to-bl focus:outline-none focus:ring-4 focus:ring-cyan-300 dark:focus:ring-cyan-800"
-          >
-            save
-          </button>
-          <button
-            onClick={onRestore}
-            className="group relative mb-2 mr-2 inline-flex items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-pink-500 to-orange-400 p-0.5 text-sm font-medium text-gray-900 hover:text-white focus:outline-none focus:ring-4 focus:ring-pink-200 group-hover:from-pink-500 group-hover:to-orange-400 dark:text-white dark:focus:ring-pink-800"
-          >
-            <span className="relative rounded-md bg-white px-5 py-2.5 text-gray-900 transition-all duration-75 ease-in group-hover:bg-opacity-0 group-hover:text-white">
-              restore
-            </span>
-          </button>
-          <SelectPanel
-            onSelect={setSelectedEdgeType}
-            selectedEdge={selectedEdgeType}
-          />
+            <SelectPanel
+              onSelect={setSelectedEdgeType}
+              selectedEdge={selectedEdgeType}
+            />
+
+            <Sidebar
+              stateName={newStateName}
+              onStateNameChange={setNewStateName}
+            />
+
+          </div>
         </Panel>
         <Controls />
         <MiniMap />
@@ -301,6 +304,7 @@ function GraphEditorComponent() {
         {/* @ts-ignore */}
         <Background variant="dots" gap={12} size={1} />
       </ReactFlow>
+
     </div>
   );
 }
@@ -350,13 +354,6 @@ const SelectPanel = ({ onSelect, selectedEdge }: SelectPanelProps) => {
 
   return (
     <div className="flex flex-col rounded-xl border border-gray-200 bg-white shadow-md p-2">
-
-      {/* <div className="flex flex-row items-center gap-2 cursor-pointer">
-        <AutomaticArrowTail />
-        <span className="underline text-[#4A4A4A] text-sm leading-6 relative top-[-2px]">Transition</span>
-        <AutomaticArrowHead />
-      </div> */}
-
       {edgeTypes.map(({ type, label, icon }) => (
         <div
           key={type}
@@ -379,3 +376,75 @@ const SelectPanel = ({ onSelect, selectedEdge }: SelectPanelProps) => {
     </div>
   )
 };
+
+interface SidebarProps {
+  stateName: string;
+  onStateNameChange: (stateName: string) => void;
+}
+
+const Sidebar = ({ stateName, onStateNameChange }: SidebarProps) => {
+  const onDragStart = (event: React.DragEvent<HTMLDivElement>) => {
+    if (!stateName) return;
+
+    event.dataTransfer.setData('application/reactflow', stateName);
+    event.dataTransfer.effectAllowed = 'move';
+  };
+
+  return (
+    <div className="flex flex-col rounded-xl border border-gray-200 bg-white shadow-md p-2">
+      <div className="description">You can drag these nodes to the pane on the right.</div>
+      <div
+        className="mb-2 mr-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-gradient-to-bl focus:outline-none focus:ring-4 focus:ring-cyan-300 dark:focus:ring-cyan-800"
+        onDragStart={onDragStart}
+        draggable
+      >
+        <input
+          className="w-full text-sm font-medium text-white bg-transparent border-0 border-b-[1px] border-white placeholder-white focus:ring-0 focus:border-white focus:border-b-2 hover:border-b-2 placeholder:italic"
+          placeholder="State name"
+          value={stateName}
+          onChange={(event) => onStateNameChange(event.target.value)}
+        />
+      </div>
+    </div>
+  );
+};
+
+
+interface GraphgActionsProps {
+  onLayout: ({ direction, useInitialNodes }: any) => void;
+  onSave: () => void;
+  onRestore: () => void;
+}
+
+
+const GraphgActions = ({
+  onLayout,
+  onSave,
+  onRestore
+}: GraphgActionsProps) => {
+  return (
+  <div className="flex flex-col rounded-xl border border-gray-200 bg-white shadow-md p-2">
+    <button
+      onClick={() => onLayout({ direction: 'DOWN' })}
+      className="mb-2 mr-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-gradient-to-bl focus:outline-none focus:ring-4 focus:ring-cyan-300 dark:focus:ring-cyan-800"
+    >
+      vertical layout
+    </button>
+
+    <button
+      onClick={onSave}
+      className="mb-2 mr-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-gradient-to-bl focus:outline-none focus:ring-4 focus:ring-cyan-300 dark:focus:ring-cyan-800"
+    >
+      save
+    </button>
+    <button
+      onClick={onRestore}
+      className="group relative mb-2 mr-2 inline-flex items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-pink-500 to-orange-400 p-0.5 text-sm font-medium text-gray-900 hover:text-white focus:outline-none focus:ring-4 focus:ring-pink-200 group-hover:from-pink-500 group-hover:to-orange-400 dark:text-white dark:focus:ring-pink-800"
+    >
+      <span className="relative rounded-md px-5 py-2.5 text-gray-900 transition-all duration-75 ease-in group-hover:bg-opacity-0 group-hover:text-white">
+        restore
+      </span>
+    </button>
+  </div>
+  );
+}
