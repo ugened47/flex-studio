@@ -1,19 +1,27 @@
-"use client";
+'use client';
 
 import { useCallback } from 'react';
-import { useStore, getBezierPath, EdgeProps } from 'reactflow';
+
+import { EdgeProps, getBezierPath, useStore } from 'reactflow';
 
 import { getEdgeParams } from './utils';
 
 function FloatingEdge({ id, source, target, markerEnd, style }: EdgeProps) {
-  const sourceNode = useStore(useCallback((store) => store.nodeInternals.get(source), [source]));
-  const targetNode = useStore(useCallback((store) => store.nodeInternals.get(target), [target]));
+  const sourceNode = useStore(
+    useCallback((store) => store.nodeInternals.get(source), [source]),
+  );
+  const targetNode = useStore(
+    useCallback((store) => store.nodeInternals.get(target), [target]),
+  );
 
   if (!sourceNode || !targetNode) {
     return null;
   }
 
-  const { sx, sy, tx, ty, sourcePos, targetPos } = getEdgeParams(sourceNode, targetNode);
+  const { sx, sy, tx, ty, sourcePos, targetPos } = getEdgeParams(
+    sourceNode,
+    targetNode,
+  );
 
   const [edgePath] = getBezierPath({
     sourceX: sx,

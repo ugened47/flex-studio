@@ -1,24 +1,27 @@
-import "./globals.css";
-import { Analytics } from "@vercel/analytics/react";
-import cx from "classnames";
-import { sfPro, inter } from "./fonts";
-import Nav from "@/components/layout/nav";
-import Footer from "@/components/layout/footer";
-import { Suspense } from "react";
+import { Suspense } from 'react';
+
+import { Analytics } from '@vercel/analytics/react';
+import cx from 'classnames';
+
+import Footer from '@/components/layout/footer';
+import Nav from '@/components/layout/nav';
+
+import { inter, sfPro } from './fonts';
+import './globals.css';
 
 export const metadata = {
-  title: "Flex Studio - Building blocks for your Next.js project",
+  title: 'Flex Studio - Building blocks for your Next.js project',
   description:
-    "Flex Studio is the all-in-one solution for your Next.js project. It includes a design system, authentication, analytics, and more.",
+    'Flex Studio is the all-in-one solution for your Next.js project. It includes a design system, authentication, analytics, and more.',
   twitter: {
-    card: "summary_large_image",
-    title: "Flex Studio - Building blocks for your Next.js project",
+    card: 'summary_large_image',
+    title: 'Flex Studio - Building blocks for your Next.js project',
     description:
-      "Flex Studio is the all-in-one solution for your Next.js project. It includes a design system, authentication, analytics, and more.",
-    creator: "@steventey",
+      'Flex Studio is the all-in-one solution for your Next.js project. It includes a design system, authentication, analytics, and more.',
+    creator: '@steventey',
   },
-  metadataBase: new URL("https://flex-studio-ten.vercel.app"),
-  themeColor: "#FFF",
+  metadataBase: new URL('https://flex-studio-ten.vercel.app'),
+  themeColor: '#FFF',
 };
 
 export default async function RootLayout({

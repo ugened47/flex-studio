@@ -3,13 +3,13 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   images: {
-    domains: ["avatars.githubusercontent.com", "vercel.com"],
+    domains: ['avatars.githubusercontent.com', 'vercel.com'],
   },
   async redirects() {
     return [
       {
-        source: "/github",
-        destination: "https://github.com/ugened47/flex-studio",
+        source: '/github',
+        destination: 'https://github.com/ugened47/flex-studio',
         permanent: false,
       },
     ];

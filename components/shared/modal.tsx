@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Dispatch,
@@ -6,11 +6,14 @@ import {
   useCallback,
   useEffect,
   useRef,
-} from "react";
-import FocusTrap from "focus-trap-react";
-import { AnimatePresence, motion } from "framer-motion";
-import Leaflet from "./leaflet";
-import useWindowSize from "@/lib/hooks/use-window-size";
+} from 'react';
+
+import FocusTrap from 'focus-trap-react';
+import { AnimatePresence, motion } from 'framer-motion';
+
+import useWindowSize from '@/lib/hooks/use-window-size';
+
+import Leaflet from './leaflet';
 
 export default function Modal({
   children,
@@ -25,7 +28,7 @@ export default function Modal({
 
   const onKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      if (e.key === 'Escape') {
         setShowModal(false);
       }
     },
@@ -33,8 +36,8 @@ export default function Modal({
   );
 
   useEffect(() => {
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
   }, [onKeyDown]);
 
   const { isMobile, isDesktop } = useWindowSize();

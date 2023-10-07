@@ -1,14 +1,16 @@
-import Modal from "@/components/shared/modal";
-import { signIn } from "next-auth/react";
 import {
-  useState,
   Dispatch,
   SetStateAction,
   useCallback,
   useMemo,
-} from "react";
-import { LoadingDots, Github } from "@/components/shared/icons";
-import Image from "next/image";
+  useState,
+} from 'react';
+
+import { signIn } from 'next-auth/react';
+import Image from 'next/image';
+
+import { Github, LoadingDots } from '@/components/shared/icons';
+import Modal from '@/components/shared/modal';
 
 const SignInModal = ({
   showSignInModal,
@@ -44,12 +46,12 @@ const SignInModal = ({
             disabled={signInClicked}
             className={`${
               signInClicked
-                ? "cursor-not-allowed border-gray-200 bg-gray-100"
-                : "border border-gray-200 bg-white text-black hover:bg-gray-50"
+                ? 'cursor-not-allowed border-gray-200 bg-gray-100'
+                : 'border border-gray-200 bg-white text-black hover:bg-gray-50'
             } flex h-10 w-full items-center justify-center space-x-3 rounded-md border text-sm shadow-sm transition-all duration-75 focus:outline-none`}
             onClick={() => {
               setSignInClicked(true);
-              signIn("github");
+              signIn('github');
             }}
           >
             {signInClicked ? (

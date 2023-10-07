@@ -1,12 +1,14 @@
-import Modal from "@/components/shared/modal";
 import {
-  useState,
   Dispatch,
   SetStateAction,
   useCallback,
   useMemo,
-} from "react";
-import Image from "next/image";
+  useState,
+} from 'react';
+
+import Image from 'next/image';
+
+import Modal from '@/components/shared/modal';
 
 const DemoModal = ({
   showDemoModal,

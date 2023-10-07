@@ -1,7 +1,14 @@
 'use client';
 
 import React, { memo, useState } from 'react';
-import { Handle, NodeProps, Position, useStore, useUpdateNodeInternals } from 'reactflow';
+
+import {
+  Handle,
+  NodeProps,
+  Position,
+  useStore,
+  useUpdateNodeInternals,
+} from 'reactflow';
 
 const INITIAL_STATE = 'initial';
 
@@ -11,7 +18,6 @@ function CustomNode(props: NodeProps) {
   const { data, id } = props;
 
   console.log('CustomNode', props);
-
 
   const updateNodeInternals = useUpdateNodeInternals();
 
@@ -36,28 +42,31 @@ function CustomNode(props: NodeProps) {
         <div className="text-xs font-bold">{data.label}</div>
       </div>
 
-      {!isInitial && edges.map((edge, i) => (
+      {!isInitial &&
+        edges.map((edge, i) => (
+          <Handle
+            id={edge.targetHandle!}
+            key={edge.id + edge.targetHandle}
+            type="target"
+            position={Position.Top}
+            style={{ left: i * 20, background: '#555' }}
+            isConnectable={false}
+            className="!w-3 !h-3 !rounded"
+          />
+        ))}
+
+      {!isInitial && (
         <Handle
-          id={edge.targetHandle!}
-          key={edge.id + edge.targetHandle}
+          id={nid}
+          key={nid}
           type="target"
           position={Position.Top}
-          style={{ left: i * 20, background: "#555" }}
-          isConnectable={false}
-          className='!w-3 !h-3 !rounded'
+          style={{ left: edges.length * 20, background: '#555' }}
+          className="!w-3 !h-3 !rounded"
+          onConnect={(params) => console.log('handle onConnect', params)}
+          isConnectable
         />
-      ))}
-
-      {!isInitial && <Handle
-        id={nid}
-        key={nid}
-        type="target"
-        position={Position.Top}
-        style={{ left: edges.length * 20, background: "#555" }}
-        className='!w-3 !h-3 !rounded'
-        onConnect={(params) => console.log("handle onConnect", params)}
-        isConnectable
-      />}
+      )}
 
       {/* {uniqueHandles.map((handle: any) => (
         <Handle
@@ -74,10 +83,13 @@ function CustomNode(props: NodeProps) {
       <Handle type="target" id="operator" position={Position.Top} className="!w-3 !h-3 !bg-[#417505] !rounded !left-7" />
       <Handle type="target" id="automatic" position={Position.Top} className="!w-3 !h-3 !bg-[#888888] !rounded !left-10" /> */}
 
-      <Handle type="source" position={Position.Bottom} className="!w-6 !h-3 !bg-fuchsia-500 !rounded" />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="!w-6 !h-3 !bg-fuchsia-500 !rounded"
+      />
     </div>
   );
 }
 
 export default memo(CustomNode);
-

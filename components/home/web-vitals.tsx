@@ -1,7 +1,8 @@
-"use client";
+'use client';
 
-import { motion } from "framer-motion";
-import CountingNumbers from "@/components/shared/counting-numbers";
+import { motion } from 'framer-motion';
+
+import CountingNumbers from '@/components/shared/counting-numbers';
 
 export default function WebVitals() {
   return (
@@ -17,7 +18,7 @@ export default function WebVitals() {
           animate={{ pathLength: 1 }}
           whileInView={{ pathLength: 1 }}
           viewport={{ once: true }}
-          transition={{ delay: 0.5, duration: 2, ease: "easeOut" }}
+          transition={{ delay: 0.5, duration: 2, ease: 'easeOut' }}
           strokeWidth={7}
           strokeDasharray="0 1"
           strokeLinecap="round"

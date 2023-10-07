@@ -1,9 +1,10 @@
-"use client";
+'use client';
 
-import React from "react";
-import { ConnectionLineComponentProps, Node, getBezierPath } from "reactflow";
+import React from 'react';
 
-import { getEdgeParams } from "./utils";
+import { ConnectionLineComponentProps, Node, getBezierPath } from 'reactflow';
+
+import { getEdgeParams } from './utils';
 
 function FloatingConnectionLine({
   toX,
@@ -17,7 +18,7 @@ function FloatingConnectionLine({
   }
 
   const targetNode = {
-    id: "connection-target",
+    id: 'connection-target',
     width: 1,
     height: 1,
     positionAbsolute: { x: toX, y: toY },

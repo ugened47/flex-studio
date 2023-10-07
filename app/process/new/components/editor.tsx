@@ -1,62 +1,74 @@
-"use client";
+'use client';
 
-import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
-import ReactFlow, {
-  Connection,
-  MiniMap,
-  Controls,
-  Background,
-  useNodesState,
-  useEdgesState,
-  addEdge,
-  NodeToolbar,
-  ConnectionMode,
-  Edge,
-  useReactFlow,
-  ReactFlowInstance,
-  Panel,
-  ReactFlowProvider,
-  MarkerType,
-  EdgeProps,
-  Node,
-  useUpdateNodeInternals,
-  Position,
-} from "reactflow";
-
-import Case from "case";
-
-import cx from "classnames";
-
-import "reactflow/dist/style.css";
-import customNode from "./custom-node";
-import FloatingEdge from "./floating-edge";
-import FloatingConnectionLine from "./floating-connection-line";
-import { getRandomColor } from "./utils";
-import { AutomaticArrow, AutomaticArrowHead, AutomaticArrowTail, CustomerArrow, OperatorArrow, PrivilegedStateIcon, ProviderArrow } from "@/components/shared/icons/transition-arrow";
-
+import Case from 'case';
+import cx from 'classnames';
 import ELK from 'elkjs/lib/elk.bundled.js';
-import { inter } from "@/app/fonts";
+import ReactFlow, {
+  Background,
+  Connection,
+  ConnectionMode,
+  Controls,
+  Edge,
+  EdgeProps,
+  MarkerType,
+  MiniMap,
+  Node,
+  NodeToolbar,
+  Panel,
+  Position,
+  ReactFlowInstance,
+  ReactFlowProvider,
+  addEdge,
+  useEdgesState,
+  useNodesState,
+  useReactFlow,
+  useUpdateNodeInternals,
+} from 'reactflow';
+import 'reactflow/dist/style.css';
+
+import { inter } from '@/app/fonts';
+import {
+  AutomaticArrow,
+  AutomaticArrowHead,
+  AutomaticArrowTail,
+  CustomerArrow,
+  OperatorArrow,
+  PrivilegedStateIcon,
+  ProviderArrow,
+} from '@/components/shared/icons/transition-arrow';
+
+import customNode from './custom-node';
+import FloatingConnectionLine from './floating-connection-line';
+import FloatingEdge from './floating-edge';
+import { getRandomColor } from './utils';
 
 const nodeTypes = {
   custom: customNode,
 };
 
 const edgeTypes = {
-  floating: FloatingEdge
+  floating: FloatingEdge,
 };
 
 const initialNodes: Node[] = [
   {
-    id: "initial",
-    type: "custom",
+    id: 'initial',
+    type: 'custom',
     position: { x: 0, y: 0 },
-    data: { label: "initial" },
+    data: { label: 'initial' },
   },
 ];
 const initialEdges: Edge<any>[] = [];
 
-const flowKey = "flow";
+const flowKey = 'flow';
 
 const getNodeId = () => `node_${+new Date()}`;
 
@@ -64,17 +76,17 @@ let id = 0;
 const getId = () => `dndnode_${id++}`;
 
 enum SelectedEdgeType {
-  Customer = "customer",
-  Provider = "provider",
-  Operator = "operator",
-  Automatic = "automatic",
+  Customer = 'customer',
+  Provider = 'provider',
+  Operator = 'operator',
+  Automatic = 'automatic',
 }
 
 enum EdgeColor {
-  customer = "#F5A623",
-  provider = "#BD10E0",
-  operator = "#417505",
-  automatic = "#888888",
+  customer = '#F5A623',
+  provider = '#BD10E0',
+  operator = '#417505',
+  automatic = '#888888',
 }
 
 const proOptions = { hideAttribution: true };
@@ -92,7 +104,11 @@ const elkOptions = {
   'elk.spacing.nodeNode': '80',
 };
 
-const getLayoutedElements = async (nodes: Node[], edges: Edge[], options: any = {}) => {
+const getLayoutedElements = async (
+  nodes: Node[],
+  edges: Edge[],
+  options: any = {},
+) => {
   const isHorizontal = options?.['elk.direction'] === 'RIGHT';
   const graph = {
     id: 'root',
@@ -112,9 +128,8 @@ const getLayoutedElements = async (nodes: Node[], edges: Edge[], options: any = 
   };
 
   try {
-    const layoutedGraph = await elk
-      .layout(graph as any);
-    return ({
+    const layoutedGraph = await elk.layout(graph as any);
+    return {
       nodes: layoutedGraph?.children?.map((node_1) => ({
         ...node_1,
         // React Flow expects a position property on the node instead of `x`
@@ -123,7 +138,7 @@ const getLayoutedElements = async (nodes: Node[], edges: Edge[], options: any = 
       })),
 
       edges: layoutedGraph.edges,
-    });
+    };
   } catch (message) {
     return console.error(message);
   }
@@ -137,9 +152,11 @@ function GraphEditorComponent() {
   );
   const { setViewport, fitView } = useReactFlow();
 
-  const [newStateName, setNewStateName] = useState<string>("");
+  const [newStateName, setNewStateName] = useState<string>('');
 
-  const [selectedEdgeType, setSelectedEdgeType] = useState<SelectedEdgeType>(SelectedEdgeType.Customer);
+  const [selectedEdgeType, setSelectedEdgeType] = useState<SelectedEdgeType>(
+    SelectedEdgeType.Customer,
+  );
 
   const reactFlowWrapper = useRef<any>(null);
 
@@ -149,15 +166,17 @@ function GraphEditorComponent() {
       const ns = useInitialNodes ? initialNodes : nodes;
       const es = useInitialNodes ? initialEdges : edges;
 
-      getLayoutedElements(ns, es, opts).then(({ nodes: layoutedNodes, edges: layoutedEdges }: any) => {
-        setNodes(layoutedNodes);
-        setEdges(layoutedEdges);
+      getLayoutedElements(ns, es, opts).then(
+        ({ nodes: layoutedNodes, edges: layoutedEdges }: any) => {
+          setNodes(layoutedNodes);
+          setEdges(layoutedEdges);
 
-        window.requestAnimationFrame(() => fitView());
-      });
+          window.requestAnimationFrame(() => fitView());
+        },
+      );
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [nodes, edges]
+    [nodes, edges],
   );
 
   // Calculate the initial layout on mount.
@@ -171,14 +190,14 @@ function GraphEditorComponent() {
       setEdges((eds) => {
         console.log('params', params);
 
-        const edgeName = `${selectedEdgeType}/${params.source}-to-${params.target}`
+        const edgeName = `${selectedEdgeType}/${params.source}-to-${params.target}`;
 
         return addEdge(
           {
             ...params,
             id: edgeName,
             targetHandle: edgeName,
-            type: "smoothstep",
+            type: 'smoothstep',
             markerEnd: {
               type: MarkerType.ArrowClosed,
               color: EdgeColor[selectedEdgeType],
@@ -190,9 +209,8 @@ function GraphEditorComponent() {
             },
           },
           eds,
-        )
-      },
-      )
+        );
+      });
     },
     [setEdges, setNodes, selectedEdgeType],
   );
@@ -228,7 +246,8 @@ function GraphEditorComponent() {
     (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault();
 
-      const reactFlowBounds = reactFlowWrapper?.current?.getBoundingClientRect?.();
+      const reactFlowBounds =
+        reactFlowWrapper?.current?.getBoundingClientRect?.();
       const stateName = event.dataTransfer.getData('application/reactflow');
 
       // check if the dropped element is valid
@@ -246,15 +265,15 @@ function GraphEditorComponent() {
       const newNode = {
         id: formattedStateName,
         data: { label: formattedStateName },
-        type: "custom",
+        type: 'custom',
         position,
       };
 
       setNodes((nds) => nds.concat(newNode));
 
-      setNewStateName("");
+      setNewStateName('');
     },
-    [rfInstance, setNodes]
+    [rfInstance, setNodes],
   );
 
   return (
@@ -265,7 +284,6 @@ function GraphEditorComponent() {
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-
         onConnect={onConnect}
         onInit={setRfInstance}
         fitView
@@ -295,7 +313,6 @@ function GraphEditorComponent() {
               stateName={newStateName}
               onStateNameChange={setNewStateName}
             />
-
           </div>
         </Panel>
         <Controls />
@@ -304,7 +321,6 @@ function GraphEditorComponent() {
         {/* @ts-ignore */}
         <Background variant="dots" gap={12} size={1} />
       </ReactFlow>
-
     </div>
   );
 }
@@ -324,42 +340,48 @@ interface SelectPanelProps {
 }
 
 const SelectPanel = ({ onSelect, selectedEdge }: SelectPanelProps) => {
-
   const handleSelect = (edgeType: SelectedEdgeType) => {
     onSelect(edgeType);
-  }
+  };
 
-  const edgeTypes = useMemo(() => [
-    {
-      type: SelectedEdgeType.Customer,
-      label: "Customer",
-      icon: <CustomerArrow />,
-    },
-    {
-      type: SelectedEdgeType.Provider,
-      label: "Provider",
-      icon: <ProviderArrow />,
-    },
-    {
-      type: SelectedEdgeType.Operator,
-      label: "Marketplace Operator",
-      icon: <OperatorArrow />,
-    },
-    {
-      type: SelectedEdgeType.Automatic,
-      label: "Automatic",
-      icon: <AutomaticArrow />,
-    },
-  ], []);
+  const edgeTypes = useMemo(
+    () => [
+      {
+        type: SelectedEdgeType.Customer,
+        label: 'Customer',
+        icon: <CustomerArrow />,
+      },
+      {
+        type: SelectedEdgeType.Provider,
+        label: 'Provider',
+        icon: <ProviderArrow />,
+      },
+      {
+        type: SelectedEdgeType.Operator,
+        label: 'Marketplace Operator',
+        icon: <OperatorArrow />,
+      },
+      {
+        type: SelectedEdgeType.Automatic,
+        label: 'Automatic',
+        icon: <AutomaticArrow />,
+      },
+    ],
+    [],
+  );
 
   return (
     <div className="flex flex-col rounded-xl border border-gray-200 bg-white shadow-md p-2">
       {edgeTypes.map(({ type, label, icon }) => (
         <div
           key={type}
-          className={cx("flex flex-row items-center gap-2 cursor-pointer mb-2", {
-            "rounded-xl border-gray-200 bg-gray-50 shadow-md p-1": selectedEdge === type,
-          })}
+          className={cx(
+            'flex flex-row items-center gap-2 cursor-pointer mb-2',
+            {
+              'rounded-xl border-gray-200 bg-gray-50 shadow-md p-1':
+                selectedEdge === type,
+            },
+          )}
           onClick={() => handleSelect(type)}
         >
           {icon}
@@ -371,10 +393,12 @@ const SelectPanel = ({ onSelect, selectedEdge }: SelectPanelProps) => {
 
       <div className="flex flex-row items-center gap-2">
         <PrivilegedStateIcon />
-        <span className="text-[#4A4A4A] text-sm leading-6">Privileged transition</span>
+        <span className="text-[#4A4A4A] text-sm leading-6">
+          Privileged transition
+        </span>
       </div>
     </div>
-  )
+  );
 };
 
 interface SidebarProps {
@@ -392,7 +416,9 @@ const Sidebar = ({ stateName, onStateNameChange }: SidebarProps) => {
 
   return (
     <div className="flex flex-col rounded-xl border border-gray-200 bg-white shadow-md p-2">
-      <div className="description">You can drag these nodes to the pane on the right.</div>
+      <div className="description">
+        You can drag these nodes to the pane on the right.
+      </div>
       <div
         className="mb-2 mr-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-gradient-to-bl focus:outline-none focus:ring-4 focus:ring-cyan-300 dark:focus:ring-cyan-800"
         onDragStart={onDragStart}
@@ -409,42 +435,36 @@ const Sidebar = ({ stateName, onStateNameChange }: SidebarProps) => {
   );
 };
 
-
 interface GraphgActionsProps {
   onLayout: ({ direction, useInitialNodes }: any) => void;
   onSave: () => void;
   onRestore: () => void;
 }
 
-
-const GraphgActions = ({
-  onLayout,
-  onSave,
-  onRestore
-}: GraphgActionsProps) => {
+const GraphgActions = ({ onLayout, onSave, onRestore }: GraphgActionsProps) => {
   return (
-  <div className="flex flex-col rounded-xl border border-gray-200 bg-white shadow-md p-2">
-    <button
-      onClick={() => onLayout({ direction: 'DOWN' })}
-      className="mb-2 mr-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-gradient-to-bl focus:outline-none focus:ring-4 focus:ring-cyan-300 dark:focus:ring-cyan-800"
-    >
-      vertical layout
-    </button>
+    <div className="flex flex-col rounded-xl border border-gray-200 bg-white shadow-md p-2">
+      <button
+        onClick={() => onLayout({ direction: 'DOWN' })}
+        className="mb-2 mr-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-gradient-to-bl focus:outline-none focus:ring-4 focus:ring-cyan-300 dark:focus:ring-cyan-800"
+      >
+        vertical layout
+      </button>
 
-    <button
-      onClick={onSave}
-      className="mb-2 mr-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-gradient-to-bl focus:outline-none focus:ring-4 focus:ring-cyan-300 dark:focus:ring-cyan-800"
-    >
-      save
-    </button>
-    <button
-      onClick={onRestore}
-      className="group relative mb-2 mr-2 inline-flex items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-pink-500 to-orange-400 p-0.5 text-sm font-medium text-gray-900 hover:text-white focus:outline-none focus:ring-4 focus:ring-pink-200 group-hover:from-pink-500 group-hover:to-orange-400 dark:text-white dark:focus:ring-pink-800"
-    >
-      <span className="relative rounded-md px-5 py-2.5 text-gray-900 transition-all duration-75 ease-in group-hover:bg-opacity-0 group-hover:text-white">
-        restore
-      </span>
-    </button>
-  </div>
+      <button
+        onClick={onSave}
+        className="mb-2 mr-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-gradient-to-bl focus:outline-none focus:ring-4 focus:ring-cyan-300 dark:focus:ring-cyan-800"
+      >
+        save
+      </button>
+      <button
+        onClick={onRestore}
+        className="group relative mb-2 mr-2 inline-flex items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-pink-500 to-orange-400 p-0.5 text-sm font-medium text-gray-900 hover:text-white focus:outline-none focus:ring-4 focus:ring-pink-200 group-hover:from-pink-500 group-hover:to-orange-400 dark:text-white dark:focus:ring-pink-800"
+      >
+        <span className="relative rounded-md px-5 py-2.5 text-gray-900 transition-all duration-75 ease-in group-hover:bg-opacity-0 group-hover:text-white">
+          restore
+        </span>
+      </button>
+    </div>
   );
-}
+};
