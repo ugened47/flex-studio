@@ -158,6 +158,8 @@ function GraphEditorComponent() {
     SelectedEdgeType.Customer,
   );
 
+  const [newEdgeName, setNewEdgeName] = useState<string>('');
+
   const reactFlowWrapper = useRef<any>(null);
 
   const onLayout = useCallback(
@@ -187,17 +189,18 @@ function GraphEditorComponent() {
 
   const onConnect = useCallback(
     (params: Connection) => {
+      const edgeName = Case.kebab(newEdgeName);
+
+      if (!edgeName) return;
+
       setEdges((eds) => {
         console.log('params', params);
-
-        const edgeName = `${selectedEdgeType}/${params.source}-to-${params.target}`;
 
         return addEdge(
           {
             ...params,
             id: edgeName,
-            targetHandle: edgeName,
-            type: 'smoothstep',
+            type: 'default',
             markerEnd: {
               type: MarkerType.ArrowClosed,
               color: EdgeColor[selectedEdgeType],
@@ -211,8 +214,10 @@ function GraphEditorComponent() {
           eds,
         );
       });
+
+      setNewEdgeName('');
     },
-    [setEdges, setNodes, selectedEdgeType],
+    [setEdges, setNodes, selectedEdgeType, newEdgeName, setNewEdgeName],
   );
 
   const onSave = useCallback(() => {
@@ -307,6 +312,8 @@ function GraphEditorComponent() {
             <SelectPanel
               onSelect={setSelectedEdgeType}
               selectedEdge={selectedEdgeType}
+              onEdgeNameChange={setNewEdgeName}
+              newEdgeName={newEdgeName}
             />
 
             <Sidebar
@@ -337,9 +344,16 @@ interface SelectPanelProps {
   onSelect: (edgeType: SelectedEdgeType) => void;
   togglePrivileged?: (edgeType: string) => void;
   selectedEdge?: SelectedEdgeType;
+  newEdgeName: string;
+  onEdgeNameChange: (edgeName: string) => void;
 }
 
-const SelectPanel = ({ onSelect, selectedEdge }: SelectPanelProps) => {
+const SelectPanel = ({
+  onSelect,
+  selectedEdge,
+  onEdgeNameChange,
+  newEdgeName,
+}: SelectPanelProps) => {
   const handleSelect = (edgeType: SelectedEdgeType) => {
     onSelect(edgeType);
   };
@@ -372,6 +386,13 @@ const SelectPanel = ({ onSelect, selectedEdge }: SelectPanelProps) => {
 
   return (
     <div className="flex flex-col rounded-xl border border-gray-200 bg-white shadow-md p-2">
+      <input
+        className="flex flex-row items-center gap-2 cursor-pointer mb-2 rounded-xl border-gray-200 bg-gray-50 shadow-md p-1"
+        placeholder="Transition name"
+        value={newEdgeName}
+        onChange={(event) => onEdgeNameChange(event.target.value)}
+      />
+
       {edgeTypes.map(({ type, label, icon }) => (
         <div
           key={type}
