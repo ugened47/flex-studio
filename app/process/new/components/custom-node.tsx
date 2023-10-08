@@ -17,8 +17,6 @@ function CustomNode(props: NodeProps) {
 
   const { data, id } = props;
 
-  console.log('CustomNode', props);
-
   const updateNodeInternals = useUpdateNodeInternals();
 
   const edges = useStore((s) => {

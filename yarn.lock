@@ -2225,6 +2225,11 @@ ecdsa-sig-formatter@1.0.11, ecdsa-sig-formatter@^1.0.11:
   dependencies:
     safe-buffer "^5.0.1"
 
+edn-data@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/edn-data/-/edn-data-1.0.0.tgz#1851973fcc21c841ecac3c81d5971f22926ccf15"
+  integrity sha512-APhRwwveKvsK193tw4ZBxCU6HRgBtuZ3sXt1G+czxZImNVOqYUWdQDIs4CpRFWfSQh//mPwgyBB0Qv7aUDmoFA==
+
 electron-to-chromium@^1.4.535:
   version "1.4.544"
   resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.4.544.tgz#fcb156d83f0ee6e4c9d030c6fedb2a37594f3abf"

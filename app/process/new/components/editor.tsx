@@ -10,6 +10,7 @@ import React, {
 
 import Case from 'case';
 import cx from 'classnames';
+import { toEDNString, toEDNStringFromSimpleObject } from 'edn-data';
 import ELK from 'elkjs/lib/elk.bundled.js';
 import ReactFlow, {
   Background,
@@ -27,6 +28,7 @@ import ReactFlow, {
   ReactFlowInstance,
   ReactFlowProvider,
   addEdge,
+  updateEdge,
   useEdgesState,
   useNodesState,
   useReactFlow,
@@ -48,7 +50,6 @@ import {
 import customNode from './custom-node';
 import FloatingConnectionLine from './floating-connection-line';
 import FloatingEdge from './floating-edge';
-import { getRandomColor } from './utils';
 
 const nodeTypes = {
   custom: customNode,
@@ -69,11 +70,6 @@ const initialNodes: Node[] = [
 const initialEdges: Edge<any>[] = [];
 
 const flowKey = 'flow';
-
-const getNodeId = () => `node_${+new Date()}`;
-
-let id = 0;
-const getId = () => `dndnode_${id++}`;
 
 enum SelectedEdgeType {
   Customer = 'customer',
@@ -144,6 +140,19 @@ const getLayoutedElements = async (
   }
 };
 
+type Transition = {
+  ':name': string;
+  ':from': string;
+  ':to': string;
+  // ... other properties as needed
+};
+
+type EDNData = {
+  ':format': string;
+  ':transitions': Transition[];
+  // ... other properties as needed
+};
+
 function GraphEditorComponent() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -194,8 +203,6 @@ function GraphEditorComponent() {
       if (!edgeName) return;
 
       setEdges((eds) => {
-        console.log('params', params);
-
         return addEdge(
           {
             ...params,
@@ -207,7 +214,7 @@ function GraphEditorComponent() {
             },
             label: edgeName,
             style: {
-              strokeWidth: 2,
+              strokeWidth: 1,
               stroke: EdgeColor[selectedEdgeType],
             },
           },
@@ -217,7 +224,7 @@ function GraphEditorComponent() {
 
       setNewEdgeName('');
     },
-    [setEdges, setNodes, selectedEdgeType, newEdgeName, setNewEdgeName],
+    [setEdges, selectedEdgeType, newEdgeName, setNewEdgeName],
   );
 
   const onSave = useCallback(() => {
@@ -281,6 +288,15 @@ function GraphEditorComponent() {
     [rfInstance, setNodes],
   );
 
+  console.log('rfInstance', rfInstance?.toObject());
+
+  const onEdgeUpdate = useCallback(
+    (oldEdge: Edge, newConnection: Connection) =>
+      setEdges((els) => updateEdge(oldEdge, newConnection, els)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
   return (
     <div className="h-full w-full" ref={reactFlowWrapper}>
       <ReactFlow
@@ -300,27 +316,31 @@ function GraphEditorComponent() {
         proOptions={proOptions}
         onDrop={onDrop}
         onDragOver={onDragOver}
+        onEdgeUpdate={onEdgeUpdate}
       >
         <Panel position="top-right">
           <div className="max-w-xs">
-            <GraphgActions
+            <GraphgActionsPanel
               onLayout={onLayout}
               onSave={onSave}
               onRestore={onRestore}
             />
 
-            <SelectPanel
+            <NewTransitionPanel
               onSelect={setSelectedEdgeType}
               selectedEdge={selectedEdgeType}
               onEdgeNameChange={setNewEdgeName}
               newEdgeName={newEdgeName}
             />
 
-            <Sidebar
+            <NewNodePanel
               stateName={newStateName}
               onStateNameChange={setNewStateName}
             />
           </div>
+        </Panel>
+        <Panel position="bottom-left">
+          <EdnPanael rfInstance={rfInstance} />
         </Panel>
         <Controls />
         <MiniMap />
@@ -340,7 +360,7 @@ const GraphEditor = () => (
 
 export default GraphEditor;
 
-interface SelectPanelProps {
+interface NewTransitionPanelProps {
   onSelect: (edgeType: SelectedEdgeType) => void;
   togglePrivileged?: (edgeType: string) => void;
   selectedEdge?: SelectedEdgeType;
@@ -348,12 +368,12 @@ interface SelectPanelProps {
   onEdgeNameChange: (edgeName: string) => void;
 }
 
-const SelectPanel = ({
+const NewTransitionPanel = ({
   onSelect,
   selectedEdge,
   onEdgeNameChange,
   newEdgeName,
-}: SelectPanelProps) => {
+}: NewTransitionPanelProps) => {
   const handleSelect = (edgeType: SelectedEdgeType) => {
     onSelect(edgeType);
   };
@@ -422,12 +442,12 @@ const SelectPanel = ({
   );
 };
 
-interface SidebarProps {
+interface NewNodePanelProps {
   stateName: string;
   onStateNameChange: (stateName: string) => void;
 }
 
-const Sidebar = ({ stateName, onStateNameChange }: SidebarProps) => {
+const NewNodePanel = ({ stateName, onStateNameChange }: NewNodePanelProps) => {
   const onDragStart = (event: React.DragEvent<HTMLDivElement>) => {
     if (!stateName) return;
 
@@ -456,13 +476,17 @@ const Sidebar = ({ stateName, onStateNameChange }: SidebarProps) => {
   );
 };
 
-interface GraphgActionsProps {
+interface GraphgActionsPanelProps {
   onLayout: ({ direction, useInitialNodes }: any) => void;
   onSave: () => void;
   onRestore: () => void;
 }
 
-const GraphgActions = ({ onLayout, onSave, onRestore }: GraphgActionsProps) => {
+const GraphgActionsPanel = ({
+  onLayout,
+  onSave,
+  onRestore,
+}: GraphgActionsPanelProps) => {
   return (
     <div className="flex flex-col rounded-xl border border-gray-200 bg-white shadow-md p-2">
       <button
@@ -486,6 +510,51 @@ const GraphgActions = ({ onLayout, onSave, onRestore }: GraphgActionsProps) => {
           restore
         </span>
       </button>
+    </div>
+  );
+};
+
+const EdnPanael = ({
+  rfInstance,
+}: {
+  rfInstance: ReactFlowInstance<any, any>;
+}) => {
+  const stateObject = () => {
+    if (!rfInstance) {
+      return {
+        format: ':v3',
+        transitions: [],
+      };
+    }
+
+    const reactFlowState = rfInstance?.toObject();
+
+    // Convert edges to transitions
+    const transitions = reactFlowState.edges.map((edge) => {
+      if (edge.source && edge.target) {
+        const transition = {
+          name: `:transition/${edge.id}`,
+          from: `:state/${edge.source}`,
+          to: `:state/${edge.target}`,
+          // ... other properties can be added as needed
+        };
+        return transition;
+      }
+    });
+
+    return {
+      format: ':v3',
+      transitions,
+      // ... other properties can be added as needed
+    };
+  };
+
+  console.log('stateObject', stateObject());
+  console.log(toEDNStringFromSimpleObject(stateObject() as any));
+
+  return (
+    <div className="flex flex-col rounded-xl border border-gray-200 bg-white shadow-md p-2">
+      {toEDNStringFromSimpleObject(stateObject() as any)}
     </div>
   );
 };
