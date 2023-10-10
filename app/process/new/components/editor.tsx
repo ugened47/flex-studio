@@ -1,16 +1,8 @@
 'use client';
 
-import React, {
-  useCallback,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
 import Case from 'case';
-import cx from 'classnames';
-import { toEDNString, toEDNStringFromSimpleObject } from 'edn-data';
 import ELK from 'elkjs/lib/elk.bundled.js';
 import ReactFlow, {
   Background,
@@ -18,13 +10,10 @@ import ReactFlow, {
   ConnectionMode,
   Controls,
   Edge,
-  EdgeProps,
   MarkerType,
-  MiniMap,
   Node,
   NodeToolbar,
   Panel,
-  Position,
   ReactFlowInstance,
   ReactFlowProvider,
   addEdge,
@@ -32,27 +21,20 @@ import ReactFlow, {
   useEdgesState,
   useNodesState,
   useReactFlow,
-  useUpdateNodeInternals,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
-import { inter } from '@/app/fonts';
-import {
-  AutomaticArrow,
-  AutomaticArrowHead,
-  AutomaticArrowTail,
-  CustomerArrow,
-  OperatorArrow,
-  PrivilegedStateIcon,
-  ProviderArrow,
-} from '@/components/shared/icons/transition-arrow';
+import { EdgeColor, SelectedEdgeType } from '@/lib/constants';
 
-import customNode from './custom-node';
-import FloatingConnectionLine from './floating-connection-line';
+import CustomNode from './custom-node';
+import EdnPanel from './edn-panel';
 import FloatingEdge from './floating-edge';
+import GraphgActionsPanel from './graphg-actions-panel';
+import NewNodePanel from './new-node-panel';
+import NewTransitionPanel from './new-transition-panel';
 
 const nodeTypes = {
-  custom: customNode,
+  custom: CustomNode,
 };
 
 const edgeTypes = {
@@ -70,20 +52,6 @@ const initialNodes: Node[] = [
 const initialEdges: Edge<any>[] = [];
 
 const flowKey = 'flow';
-
-enum SelectedEdgeType {
-  Customer = 'customer',
-  Provider = 'provider',
-  Operator = 'operator',
-  Automatic = 'automatic',
-}
-
-enum EdgeColor {
-  customer = '#F5A623',
-  provider = '#BD10E0',
-  operator = '#417505',
-  automatic = '#888888',
-}
 
 const proOptions = { hideAttribution: true };
 
@@ -217,6 +185,9 @@ function GraphEditorComponent() {
               strokeWidth: 1,
               stroke: EdgeColor[selectedEdgeType],
             },
+            data: {
+              edgeType: selectedEdgeType,
+            },
           },
           eds,
         );
@@ -288,8 +259,6 @@ function GraphEditorComponent() {
     [rfInstance, setNodes],
   );
 
-  console.log('rfInstance', rfInstance?.toObject());
-
   const onEdgeUpdate = useCallback(
     (oldEdge: Edge, newConnection: Connection) =>
       setEdges((els) => updateEdge(oldEdge, newConnection, els)),
@@ -317,6 +286,9 @@ function GraphEditorComponent() {
         onDrop={onDrop}
         onDragOver={onDragOver}
         onEdgeUpdate={onEdgeUpdate}
+        onEdgeClick={(event, edge) => {
+          console.log('edge', edge);
+        }}
       >
         <Panel position="top-right">
           <div className="max-w-xs">
@@ -339,11 +311,11 @@ function GraphEditorComponent() {
             />
           </div>
         </Panel>
-        <Panel position="bottom-left">
-          <EdnPanael rfInstance={rfInstance} />
+        <Panel position="top-left">
+          <EdnPanel rfInstance={rfInstance} />
         </Panel>
         <Controls />
-        <MiniMap />
+        {/* <MiniMap /> */}
         <NodeToolbar />
         {/* @ts-ignore */}
         <Background variant="dots" gap={12} size={1} />
@@ -359,202 +331,3 @@ const GraphEditor = () => (
 );
 
 export default GraphEditor;
-
-interface NewTransitionPanelProps {
-  onSelect: (edgeType: SelectedEdgeType) => void;
-  togglePrivileged?: (edgeType: string) => void;
-  selectedEdge?: SelectedEdgeType;
-  newEdgeName: string;
-  onEdgeNameChange: (edgeName: string) => void;
-}
-
-const NewTransitionPanel = ({
-  onSelect,
-  selectedEdge,
-  onEdgeNameChange,
-  newEdgeName,
-}: NewTransitionPanelProps) => {
-  const handleSelect = (edgeType: SelectedEdgeType) => {
-    onSelect(edgeType);
-  };
-
-  const edgeTypes = useMemo(
-    () => [
-      {
-        type: SelectedEdgeType.Customer,
-        label: 'Customer',
-        icon: <CustomerArrow />,
-      },
-      {
-        type: SelectedEdgeType.Provider,
-        label: 'Provider',
-        icon: <ProviderArrow />,
-      },
-      {
-        type: SelectedEdgeType.Operator,
-        label: 'Marketplace Operator',
-        icon: <OperatorArrow />,
-      },
-      {
-        type: SelectedEdgeType.Automatic,
-        label: 'Automatic',
-        icon: <AutomaticArrow />,
-      },
-    ],
-    [],
-  );
-
-  return (
-    <div className="flex flex-col rounded-xl border border-gray-200 bg-white shadow-md p-2">
-      <input
-        className="flex flex-row items-center gap-2 cursor-pointer mb-2 rounded-xl border-gray-200 bg-gray-50 shadow-md p-1"
-        placeholder="Transition name"
-        value={newEdgeName}
-        onChange={(event) => onEdgeNameChange(event.target.value)}
-      />
-
-      {edgeTypes.map(({ type, label, icon }) => (
-        <div
-          key={type}
-          className={cx(
-            'flex flex-row items-center gap-2 cursor-pointer mb-2',
-            {
-              'rounded-xl border-gray-200 bg-gray-50 shadow-md p-1':
-                selectedEdge === type,
-            },
-          )}
-          onClick={() => handleSelect(type)}
-        >
-          {icon}
-          <span className="underline text-[#4A4A4A] text-sm leading-6 relative top-[-2px]">
-            {label}
-          </span>
-        </div>
-      ))}
-
-      <div className="flex flex-row items-center gap-2">
-        <PrivilegedStateIcon />
-        <span className="text-[#4A4A4A] text-sm leading-6">
-          Privileged transition
-        </span>
-      </div>
-    </div>
-  );
-};
-
-interface NewNodePanelProps {
-  stateName: string;
-  onStateNameChange: (stateName: string) => void;
-}
-
-const NewNodePanel = ({ stateName, onStateNameChange }: NewNodePanelProps) => {
-  const onDragStart = (event: React.DragEvent<HTMLDivElement>) => {
-    if (!stateName) return;
-
-    event.dataTransfer.setData('application/reactflow', stateName);
-    event.dataTransfer.effectAllowed = 'move';
-  };
-
-  return (
-    <div className="flex flex-col rounded-xl border border-gray-200 bg-white shadow-md p-2">
-      <div className="description">
-        You can drag these nodes to the pane on the right.
-      </div>
-      <div
-        className="mb-2 mr-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-gradient-to-bl focus:outline-none focus:ring-4 focus:ring-cyan-300 dark:focus:ring-cyan-800"
-        onDragStart={onDragStart}
-        draggable
-      >
-        <input
-          className="w-full text-sm font-medium text-white bg-transparent border-0 border-b-[1px] border-white placeholder-white focus:ring-0 focus:border-white focus:border-b-2 hover:border-b-2 placeholder:italic"
-          placeholder="State name"
-          value={stateName}
-          onChange={(event) => onStateNameChange(event.target.value)}
-        />
-      </div>
-    </div>
-  );
-};
-
-interface GraphgActionsPanelProps {
-  onLayout: ({ direction, useInitialNodes }: any) => void;
-  onSave: () => void;
-  onRestore: () => void;
-}
-
-const GraphgActionsPanel = ({
-  onLayout,
-  onSave,
-  onRestore,
-}: GraphgActionsPanelProps) => {
-  return (
-    <div className="flex flex-col rounded-xl border border-gray-200 bg-white shadow-md p-2">
-      <button
-        onClick={() => onLayout({ direction: 'DOWN' })}
-        className="mb-2 mr-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-gradient-to-bl focus:outline-none focus:ring-4 focus:ring-cyan-300 dark:focus:ring-cyan-800"
-      >
-        vertical layout
-      </button>
-
-      <button
-        onClick={onSave}
-        className="mb-2 mr-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-gradient-to-bl focus:outline-none focus:ring-4 focus:ring-cyan-300 dark:focus:ring-cyan-800"
-      >
-        save
-      </button>
-      <button
-        onClick={onRestore}
-        className="group relative mb-2 mr-2 inline-flex items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-pink-500 to-orange-400 p-0.5 text-sm font-medium text-gray-900 hover:text-white focus:outline-none focus:ring-4 focus:ring-pink-200 group-hover:from-pink-500 group-hover:to-orange-400 dark:text-white dark:focus:ring-pink-800"
-      >
-        <span className="relative rounded-md px-5 py-2.5 text-gray-900 transition-all duration-75 ease-in group-hover:bg-opacity-0 group-hover:text-white">
-          restore
-        </span>
-      </button>
-    </div>
-  );
-};
-
-const EdnPanael = ({
-  rfInstance,
-}: {
-  rfInstance: ReactFlowInstance<any, any>;
-}) => {
-  const stateObject = () => {
-    if (!rfInstance) {
-      return {
-        format: ':v3',
-        transitions: [],
-      };
-    }
-
-    const reactFlowState = rfInstance?.toObject();
-
-    // Convert edges to transitions
-    const transitions = reactFlowState.edges.map((edge) => {
-      if (edge.source && edge.target) {
-        const transition = {
-          name: `:transition/${edge.id}`,
-          from: `:state/${edge.source}`,
-          to: `:state/${edge.target}`,
-          // ... other properties can be added as needed
-        };
-        return transition;
-      }
-    });
-
-    return {
-      format: ':v3',
-      transitions,
-      // ... other properties can be added as needed
-    };
-  };
-
-  console.log('stateObject', stateObject());
-  console.log(toEDNStringFromSimpleObject(stateObject() as any));
-
-  return (
-    <div className="flex flex-col rounded-xl border border-gray-200 bg-white shadow-md p-2">
-      {toEDNStringFromSimpleObject(stateObject() as any)}
-    </div>
-  );
-};

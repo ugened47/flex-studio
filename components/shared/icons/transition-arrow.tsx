@@ -36,45 +36,6 @@ export const AutomaticArrow = () => (
   <TransitionArrow className="text-[#888888]" />
 );
 
-export const AutomaticArrowTail = () => (
-  <svg
-    width="28"
-    height="11"
-    viewBox="0 0 28 11"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <line
-      fillRule="nonzero"
-      stroke="#888888"
-      fill="#888888"
-      y1="5.5"
-      strokeLinecap="square"
-      strokeWidth="1"
-      x1="0"
-      y2="5.5"
-      x2="28"
-    ></line>
-  </svg>
-);
-
-export const AutomaticArrowHead = () => (
-  <svg
-    width="25"
-    height="11"
-    viewBox="0 0 25 11"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M15.4 5.5H0h15.4V1l8.8 4.5-8.8 4.4V5.5z"
-      fill="#888888"
-      fillRule="nonzero"
-      stroke="#888888"
-      strokeDasharray="1,1"
-      strokeLinecap="square"
-    />
-  </svg>
-);
-
 export const PrivilegedStateIcon = () => (
   <svg
     width="12"

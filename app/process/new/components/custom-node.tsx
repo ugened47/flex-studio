@@ -12,7 +12,7 @@ import {
 
 const INITIAL_STATE = 'initial';
 
-function CustomNode(props: NodeProps) {
+function CustomNodeComponent(props: NodeProps) {
   const [edgeCount, incrEdge] = useState(0);
 
   const { data, id } = props;
@@ -90,4 +90,4 @@ function CustomNode(props: NodeProps) {
   );
 }
 
-export default memo(CustomNode);
+export default memo(CustomNodeComponent);
